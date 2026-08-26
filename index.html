@@ -42,7 +42,7 @@
 
           <label class="field-label" for="daily-hours">每天计划加班</label>
           <div class="number-field"><input id="daily-hours" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" value="2"><span>小时 / 天</span></div>
-          <p class="field-help">支持输入 1.5 等小数；最后一天按剩余时间安排</p>
+          <p class="field-help">支持输入 1.5 等小数；周五最后安排且最多 0.5 小时</p>
 
           <label class="field-label" for="weekends-off">希望完整双休</label>
           <div class="number-field"><input id="weekends-off" type="number" min="0" max="5" step="1" value="2"><span>个周末</span></div>
@@ -79,7 +79,7 @@
         </div>
         <div class="calendar-card">
           <div class="weekday-row">
-            <div>周一<small>工作日</small></div><div>周二<small>工作日</small></div><div>周三<small>工作日</small></div><div>周四<small>工作日</small></div><div>周五<small>工作日</small></div><div class="weekend-heading">周六<small>休息日</small></div><div class="weekend-heading">周日<small>休息日</small></div>
+            <div>周一<small>工作日</small></div><div>周二<small>工作日</small></div><div>周三<small>工作日</small></div><div>周四<small>工作日</small></div><div>周五<small>最多 0.5h</small></div><div class="weekend-heading">周六<small>休息日</small></div><div class="weekend-heading">周日<small>休息日</small></div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
         </div>

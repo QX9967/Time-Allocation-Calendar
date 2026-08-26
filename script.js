@@ -138,12 +138,14 @@
         return !(settings.preference === 'weekday' && !normalWorkday);
       });
       candidates.sort((a, b) => {
-        if (settings.preference !== 'holiday') return a - b;
         const rank = (date) => {
           const info = holidayData[dateKey(date)];
-          if (info?.type === 'holiday') return 2;
-          if ((date.getDay() === 0 || date.getDay() === 6) && info?.type !== 'workday') return 1;
-          return 0;
+          let value = date.getDay() === 5 ? 100 : 0;
+          if (settings.preference === 'holiday') {
+            if (info?.type === 'holiday') value += 20;
+            else if ((date.getDay() === 0 || date.getDay() === 6) && info?.type !== 'workday') value += 10;
+          }
+          return value;
         };
         return rank(a) - rank(b) || a - b;
       });
@@ -152,7 +154,8 @@
       const dailyHours = Math.max(0.5, Math.min(12, Number(settings.dailyHours) || 2));
       candidates.forEach((date) => {
         if (left <= 0) return;
-        const amount = Math.min(dailyHours, left);
+        const fridayLimit = date.getDay() === 5 ? 0.5 : dailyHours;
+        const amount = Math.min(fridayLimit, left);
         suggestions[dateKey(date)] = Math.round(amount * 2) / 2;
         left = Math.round((left - amount) * 2) / 2;
       });
