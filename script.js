@@ -131,15 +131,21 @@
       const todayKey = dateKey(today);
       const candidates = allPeriodDays.filter((date) => {
         const key = dateKey(date), info = holidayData[key];
-        if (key < todayKey || (state.actual[key] || 0) > 0 || info?.type === 'holiday') return false;
+        if (key < todayKey || (state.actual[key] || 0) > 0) return false;
         const weekend = date.getDay() === 0 || date.getDay() === 6;
         if (reserved.has(key) && info?.type !== 'workday') return false;
-        return !(settings.preference === 'weekday' && weekend && info?.type !== 'workday');
+        const normalWorkday = info?.type === 'workday' || (!weekend && info?.type !== 'holiday');
+        return !(settings.preference === 'weekday' && !normalWorkday);
       });
       candidates.sort((a, b) => {
         if (settings.preference !== 'holiday') return a - b;
-        const aw = a.getDay() === 0 || a.getDay() === 6, bw = b.getDay() === 0 || b.getDay() === 6;
-        return Number(aw) - Number(bw) || a - b;
+        const rank = (date) => {
+          const info = holidayData[dateKey(date)];
+          if (info?.type === 'holiday') return 2;
+          if ((date.getDay() === 0 || date.getDay() === 6) && info?.type !== 'workday') return 1;
+          return 0;
+        };
+        return rank(a) - rank(b) || a - b;
       });
 
       let left = Math.round(remaining * 2) / 2;
@@ -224,7 +230,7 @@
   document.getElementById('next-period').addEventListener('click', () => movePeriod(1));
   document.getElementById('today-button').addEventListener('click', () => { const current = currentPeriodEnd(); state.periodYear = current.year; state.periodMonth = current.month; renderAll(); });
   elements.target.addEventListener('input', (event) => { getSettings().targetHours = Math.max(0, Number(event.target.value) || 0); renderAll(); });
-  elements.dailyHours.addEventListener('input', (event) => { getSettings().dailyHours = Math.max(0.5, Math.min(12, Number(event.target.value) || 2)); renderAll(); });
+  elements.dailyHours.addEventListener('change', (event) => { getSettings().dailyHours = Math.max(0.5, Math.min(12, Number(event.target.value) || 2)); renderAll(); });
   elements.weekendsOff.addEventListener('input', (event) => { getSettings().weekendsOff = Math.max(0, Math.min(Number(event.target.max), Number(event.target.value) || 0)); renderAll(); });
   document.getElementById('preference-group').addEventListener('click', (event) => { const button = event.target.closest('[data-preference]'); if (!button) return; getSettings().preference = button.dataset.preference; renderAll(); });
   elements.calendarGrid.addEventListener('change', (event) => {

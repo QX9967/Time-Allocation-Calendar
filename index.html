@@ -41,8 +41,8 @@
           <div class="number-field"><input id="target-hours" type="number" min="0" max="300" step="0.5" value="36"><span>小时</span></div>
 
           <label class="field-label" for="daily-hours">每天计划加班</label>
-          <div class="number-field"><input id="daily-hours" type="number" min="0.5" max="12" step="0.5" value="2"><span>小时 / 天</span></div>
-          <p class="field-help">最后一天不足该时长时，按剩余时间安排</p>
+          <div class="number-field"><input id="daily-hours" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" value="2"><span>小时 / 天</span></div>
+          <p class="field-help">支持输入 1.5 等小数；最后一天按剩余时间安排</p>
 
           <label class="field-label" for="weekends-off">希望完整双休</label>
           <div class="number-field"><input id="weekends-off" type="number" min="0" max="5" step="1" value="2"><span>个周末</span></div>
@@ -67,6 +67,7 @@
           <div class="plan-note"><span class="note-icon" aria-hidden="true">▣</span><div><b id="arranged-days">剩余 0 个可安排日期</b><p id="coverage-hours">当前计划可覆盖 0 小时</p></div></div>
           <button class="reset-button" id="reset-button">清空本周期实际记录</button>
         </section>
+        <p class="overtime-rule">工作日填写下班后的加班时长；周末和法定节假日填写实际工作时长，全部计入加班。</p>
         <p class="data-note">考核周期：上月 24 日至本月 23 日<br>节假日包含 2025–2026 年国务院办公厅公布安排</p>
       </aside>
 

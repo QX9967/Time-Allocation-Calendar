@@ -24,3 +24,4 @@ body{background:#f3f4f6;color:var(--ink)}
 .holiday-tag,.off-tag,.suggestion-tag,.done-tag{border-radius:3px;font-weight:600}.suggestion-tag{color:#315b7d;background:#edf3f7}.done-tag{color:#237a57;background:#edf7f2}.off-tag{color:#765b38;background:#f7f0e5}.actual-input{border-radius:4px;background:#fff}.actual-input:focus-within{border-color:#315b7d;box-shadow:0 0 0 2px rgba(49,91,125,.1)}
 .legend{padding-top:7px}.toast{border-radius:5px;box-shadow:0 6px 16px rgba(20,30,45,.12)}.toast span{background:#237a57}
 @media(max-width:900px){.topbar{height:64px}.sidebar{background:#f3f4f6}.mobile-settings button{border-radius:6px}.calendar-header,.calendar-card,.legend{min-width:760px}}
+.overtime-rule{margin:0;padding:11px 12px;border-left:3px solid #315b7d;background:#eef2f5;color:#475467;font-size:10px;line-height:1.65}
