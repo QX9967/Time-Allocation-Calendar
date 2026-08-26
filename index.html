@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="按照公司考核周期智能分配加班时间">
+  <title>加班规划助手</title>
+  <link rel="icon" href="public/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><h1>加班规划助手</h1><p>按考核周期智能分配加班时间</p></div>
+      </div>
+      <div class="header-actions">
+        <div class="period-switcher" aria-label="考核周期切换">
+          <button id="prev-period" aria-label="上个考核周期">‹</button>
+          <button class="period-label" id="period-label">考核周期</button>
+          <button id="next-period" aria-label="下个考核周期">›</button>
+        </div>
+        <button class="secondary-button" id="today-button">当前周期</button>
+        <button class="primary-button" id="redistribute-button">↻ <span>重新分配</span></button>
+      </div>
+    </header>
+
+    <div class="mobile-settings">
+      <button id="mobile-settings-button" aria-expanded="false">
+        <span>本周期设置</span><b id="mobile-settings-summary">36h · 2 个双休</b><span id="mobile-settings-action">调整</span>
+      </button>
+    </div>
+
+    <div class="workspace">
+      <aside class="sidebar" id="sidebar">
+        <section class="panel settings-panel">
+          <div class="panel-heading"><div><span class="eyebrow">PLAN</span><h2>本周期设置</h2></div><span class="status-dot">自动</span></div>
+
+          <label class="field-label" for="target-hours">本周期需加班</label>
+          <div class="number-field"><input id="target-hours" type="number" min="0" max="300" step="0.5" value="36"><span>小时</span></div>
+
+          <label class="field-label" for="weekends-off">希望完整双休</label>
+          <div class="number-field"><input id="weekends-off" type="number" min="0" max="5" step="1" value="2"><span>个周末</span></div>
+          <p class="field-help" id="weekend-help">本周期最多可保留 4 个完整周末</p>
+
+          <span class="field-label">分配偏好</span>
+          <div class="segmented" id="preference-group" role="group" aria-label="分配偏好">
+            <button data-preference="even" class="active">均匀分配</button>
+            <button data-preference="weekday">集中工作日</button>
+            <button data-preference="holiday">避开节假日</button>
+          </div>
+          <button class="allocate-button" id="allocate-button"><span aria-hidden="true">✦</span> 自动分配</button>
+        </section>
+
+        <section class="panel progress-panel">
+          <div class="panel-heading"><div><span class="eyebrow">PROGRESS</span><h2>本周期进度</h2></div><strong id="progress-percent">0%</strong></div>
+          <div class="progress-stats">
+            <div><span>已完成</span><b class="done" id="actual-total">0h</b></div>
+            <div><span>待完成</span><b id="remaining-total">36h</b></div>
+          </div>
+          <div class="progress-track" id="progress-track" aria-label="完成度 0%"><span></span></div>
+          <div class="plan-note"><span class="note-icon" aria-hidden="true">▣</span><div><b id="arranged-days">剩余 0 个可安排日期</b><p id="coverage-hours">当前计划可覆盖 0 小时</p></div></div>
+          <button class="reset-button" id="reset-button">清空本周期实际记录</button>
+        </section>
+        <p class="data-note">考核周期：上月 24 日至本月 23 日<br>节假日包含 2025–2026 年国务院办公厅公布安排</p>
+      </aside>
+
+      <section class="calendar-area">
+        <div class="toast" id="toast" role="status"><span>✓</span> 已根据实际加班自动调整剩余计划</div>
+        <div class="calendar-header">
+          <div><span class="eyebrow">ASSESSMENT PERIOD</span><h2 id="calendar-title">考核周期</h2><p id="period-range"></p></div>
+          <div class="calendar-summary"><span class="summary-dot"></span> 建议安排 <b id="suggested-total">0h</b></div>
+        </div>
+        <div class="calendar-card">
+          <div class="weekday-row">
+            <div>周一<small>工作日</small></div><div>周二<small>工作日</small></div><div>周三<small>工作日</small></div><div>周四<small>工作日</small></div><div>周五<small>工作日</small></div><div class="weekend-heading">周六<small>休息日</small></div><div class="weekend-heading">周日<small>休息日</small></div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <footer class="legend">
+          <span><i class="legend-workday"></i>工作日</span><span><i class="legend-weekend"></i>周末</span><span><i class="legend-holiday"></i>法定节假日</span><span><i class="legend-shift"></i>调休上班</span><em>输入实际时长后，建议计划会自动更新</em>
+        </footer>
+      </section>
+    </div>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
