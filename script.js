@@ -119,7 +119,8 @@
     const cursor = new Date(range.start);
     while (cursor <= range.end) { allPeriodDays.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1); }
 
-    const actualTotal = allPeriodDays.reduce((sum, date) => sum + (Number(state.actual[dateKey(date)]) || 0), 0);
+    const actualTotal = allPeriodDays.reduce((sum, date) => date.getDay() === 5 ? sum : sum + (Number(state.actual[dateKey(date)]) || 0), 0);
+    const fridayExtra = allPeriodDays.reduce((sum, date) => date.getDay() === 5 ? sum + (Number(state.actual[dateKey(date)]) || 0) : sum, 0);
     const weekendGroups = getWeekendGroups(range.start, range.end);
     settings.weekendsOff = Math.min(settings.weekendsOff, weekendGroups.length);
     const reservable = weekendGroups.filter((group) => group.every((key) => (state.actual[key] || 0) === 0));
@@ -131,7 +132,7 @@
       const todayKey = dateKey(today);
       const candidates = allPeriodDays.filter((date) => {
         const key = dateKey(date), info = holidayData[key];
-        if (key < todayKey || (state.actual[key] || 0) > 0) return false;
+        if (key < todayKey || date.getDay() === 5 || (state.actual[key] || 0) > 0) return false;
         const weekend = date.getDay() === 0 || date.getDay() === 6;
         if (reserved.has(key) && info?.type !== 'workday') return false;
         const normalWorkday = info?.type === 'workday' || (!weekend && info?.type !== 'holiday');
@@ -140,7 +141,7 @@
       candidates.sort((a, b) => {
         const rank = (date) => {
           const info = holidayData[dateKey(date)];
-          let value = date.getDay() === 5 ? 100 : 0;
+          let value = 0;
           if (settings.preference === 'holiday') {
             if (info?.type === 'holiday') value += 20;
             else if ((date.getDay() === 0 || date.getDay() === 6) && info?.type !== 'workday') value += 10;
@@ -154,19 +155,18 @@
       const dailyHours = Math.max(0.5, Math.min(12, Number(settings.dailyHours) || 2));
       candidates.forEach((date) => {
         if (left <= 0) return;
-        const fridayLimit = date.getDay() === 5 ? 0.5 : dailyHours;
-        const amount = Math.min(fridayLimit, left);
+        const amount = Math.min(dailyHours, left);
         suggestions[dateKey(date)] = Math.round(amount * 2) / 2;
         left = Math.round((left - amount) * 2) / 2;
       });
     }
-    return { actualTotal, remaining, suggestions, reserved, weekendGroups };
+    return { actualTotal, fridayExtra, remaining, suggestions, reserved, weekendGroups };
   }
 
   const elements = {
     periodLabel: document.getElementById('period-label'), calendarTitle: document.getElementById('calendar-title'), periodRange: document.getElementById('period-range'),
     target: document.getElementById('target-hours'), dailyHours: document.getElementById('daily-hours'), weekendsOff: document.getElementById('weekends-off'), weekendHelp: document.getElementById('weekend-help'),
-    actualTotal: document.getElementById('actual-total'), remainingTotal: document.getElementById('remaining-total'), progressPercent: document.getElementById('progress-percent'),
+    actualTotal: document.getElementById('actual-total'), fridayExtra: document.getElementById('friday-extra'), remainingTotal: document.getElementById('remaining-total'), progressPercent: document.getElementById('progress-percent'),
     progressTrack: document.querySelector('#progress-track span'), arrangedDays: document.getElementById('arranged-days'), coverageHours: document.getElementById('coverage-hours'),
     suggestedTotal: document.getElementById('suggested-total'), calendarGrid: document.getElementById('calendar-grid'), toast: document.getElementById('toast'),
     sidebar: document.getElementById('sidebar'), backdrop: document.getElementById('sidebar-backdrop'), mobileSummary: document.getElementById('mobile-settings-summary'),
@@ -191,6 +191,7 @@
     const coverage = Object.values(plan.suggestions).reduce((sum, value) => sum + value, 0);
     elements.actualTotal.textContent = `${formatHours(plan.actualTotal)}h`;
     elements.remainingTotal.textContent = `${formatHours(plan.remaining)}h`;
+    elements.fridayExtra.textContent = `${formatHours(plan.fridayExtra)}h`;
     elements.progressPercent.textContent = `${progress}%`;
     elements.progressPercent.classList.toggle('complete', plan.remaining === 0);
     elements.progressTrack.style.width = `${progress}%`;
@@ -209,11 +210,12 @@
       const monthName = date.getDate() === 1 || key === dateKey(range.start) ? `<span class="month-name">${date.getMonth() + 1}月</span>` : '';
       const holidayTag = info ? `<span class="holiday-tag ${info.type}">${info.type === 'workday' ? '班' : '休'} · ${info.name}</span>` : '';
       const offTag = inside && plan.reserved.has(key) && info?.type !== 'workday' && !info ? '<span class="off-tag">完整双休</span>' : '';
-      const planTag = value > 0 ? `<span class="done-tag">✓ 已加班 ${formatHours(value)}h</span>` : suggestion > 0 ? `<span class="suggestion-tag">建议 ${formatHours(suggestion)}h</span>` : '';
-      return `<article class="day-cell ${inside ? '' : 'outside'} ${weekend ? 'weekend' : ''} ${info?.type || ''} ${isToday ? 'today' : ''}">
+      const isFriday = date.getDay() === 5;
+      const planTag = value > 0 ? `<span class="${isFriday ? 'extra-tag' : 'done-tag'}">${isFriday ? '额外 +' : '✓ 已加班 '}${formatHours(value)}h</span>` : suggestion > 0 ? `<span class="suggestion-tag">建议 ${formatHours(suggestion)}h</span>` : '';
+      return `<article class="day-cell ${inside ? '' : 'outside'} ${weekend ? 'weekend' : ''} ${isFriday ? 'friday' : ''} ${info?.type || ''} ${isToday ? 'today' : ''}">
         <div class="day-top"><span class="date-number">${date.getDate()}</span>${monthName}${isToday ? '<span class="today-badge">今天</span>' : ''}</div>
         <div class="day-flags">${inside ? holidayTag + offTag + planTag : ''}</div>
-        ${inside ? `<label class="actual-input"><span>实际</span><input data-date="${key}" aria-label="${key} 实际加班小时" type="number" min="0" max="24" step="0.5" value="${value || ''}" placeholder="0"><i>h</i></label>` : ''}
+        ${inside ? `<label class="actual-input"><span>${isFriday ? '额外' : '实际'}</span><input data-date="${key}" aria-label="${key} ${isFriday ? '额外' : '实际'}加班小时" type="number" min="0" max="24" step="0.5" value="${value || ''}" placeholder="0"><i>h</i></label>` : ''}
       </article>`;
     }).join('');
   }
