@@ -132,7 +132,7 @@
       const todayKey = dateKey(today);
       const candidates = allPeriodDays.filter((date) => {
         const key = dateKey(date), info = holidayData[key];
-        if (key < todayKey || date.getDay() === 5 || (state.actual[key] || 0) > 0) return false;
+        if (key < todayKey || date.getDay() === 5 || date.getDay() === 0 || (state.actual[key] || 0) > 0) return false;
         const weekend = date.getDay() === 0 || date.getDay() === 6;
         if (reserved.has(key) && info?.type !== 'workday') return false;
         const normalWorkday = info?.type === 'workday' || (!weekend && info?.type !== 'holiday');
