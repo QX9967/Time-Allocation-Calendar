@@ -69,9 +69,9 @@
   }
   function periodId() { return `${state.periodYear}-${pad(state.periodMonth)}`; }
   function getSettings() {
-    if (!state.settings[periodId()]) state.settings[periodId()] = { targetHours: 36, dailyHours: 2, weekendsOff: 2, preference: 'even' };
+    if (!state.settings[periodId()]) state.settings[periodId()] = { targetHours: 36, dailyHours: 2, weekendsOff: 2 };
     const settings = state.settings[periodId()];
-    if (!Number(settings.dailyHours)) settings.dailyHours = 2;
+    settings.dailyHours = Math.max(0.5, Math.min(2, Number(settings.dailyHours) || 2));
     return settings;
   }
   function getPeriodRange() {
@@ -130,35 +130,48 @@
 
     if (remaining > 0) {
       const todayKey = dateKey(today);
-      const candidates = allPeriodDays.filter((date) => {
+      const workdays = [];
+      const restDays = [];
+
+      allPeriodDays.forEach((date) => {
         const key = dateKey(date), info = holidayData[key];
-        if (key < todayKey || date.getDay() === 5 || date.getDay() === 0 || (state.actual[key] || 0) > 0) return false;
+        if (key < todayKey || date.getDay() === 5 || date.getDay() === 0 || (state.actual[key] || 0) > 0) return;
         const weekend = date.getDay() === 0 || date.getDay() === 6;
-        if (reserved.has(key) && info?.type !== 'workday') return false;
+        if (reserved.has(key) && info?.type !== 'workday') return;
         const normalWorkday = info?.type === 'workday' || (!weekend && info?.type !== 'holiday');
-        return !(settings.preference === 'weekday' && !normalWorkday);
-      });
-      candidates.sort((a, b) => {
-        const rank = (date) => {
-          const info = holidayData[dateKey(date)];
-          let value = 0;
-          if (settings.preference === 'holiday') {
-            if (info?.type === 'holiday') value += 20;
-            else if ((date.getDay() === 0 || date.getDay() === 6) && info?.type !== 'workday') value += 10;
-          }
-          return value;
-        };
-        return rank(a) - rank(b) || a - b;
+        (normalWorkday ? workdays : restDays).push(date);
       });
 
       let left = Math.round(remaining * 2) / 2;
-      const dailyHours = Math.max(0.5, Math.min(12, Number(settings.dailyHours) || 2));
-      candidates.forEach((date) => {
+      const dailyHours = Math.max(0.5, Math.min(2, Number(settings.dailyHours) || 2));
+
+      workdays.forEach((date) => {
         if (left <= 0) return;
         const amount = Math.min(dailyHours, left);
         suggestions[dateKey(date)] = Math.round(amount * 2) / 2;
         left = Math.round((left - amount) * 2) / 2;
       });
+
+      workdays.forEach((date) => {
+        if (left <= 0) return;
+        const key = dateKey(date);
+        const capacity = 2 - (suggestions[key] || 0);
+        const amount = Math.min(capacity, left);
+        if (amount > 0) suggestions[key] = Math.round(((suggestions[key] || 0) + amount) * 2) / 2;
+        left = Math.round((left - amount) * 2) / 2;
+      });
+
+      const restSlots = Math.min(restDays.length, Math.floor(left / 5));
+      if (restSlots > 0) {
+        let restTotal = Math.min(left, restSlots * 8);
+        restDays.slice(0, restSlots).forEach((date, index) => {
+          const slotsLeft = restSlots - index;
+          const amount = Math.min(8, restTotal - 5 * (slotsLeft - 1));
+          suggestions[dateKey(date)] = Math.round(amount * 2) / 2;
+          restTotal = Math.round((restTotal - amount) * 2) / 2;
+          left = Math.round((left - amount) * 2) / 2;
+        });
+      }
     }
     return { actualTotal, fridayExtra, remaining, suggestions, reserved, weekendGroups };
   }
@@ -186,7 +199,6 @@
     elements.weekendHelp.textContent = `本周期最多可保留 ${plan.weekendGroups.length} 个完整周末`;
     elements.mobileSummary.textContent = `${formatHours(settings.targetHours)}h · 每天 ${formatHours(settings.dailyHours)}h`;
 
-    document.querySelectorAll('[data-preference]').forEach((button) => button.classList.toggle('active', button.dataset.preference === settings.preference));
     const progress = settings.targetHours > 0 ? Math.min(100, Math.round(plan.actualTotal / settings.targetHours * 100)) : 0;
     const coverage = Object.values(plan.suggestions).reduce((sum, value) => sum + value, 0);
     elements.actualTotal.textContent = `${formatHours(plan.actualTotal)}h`;
@@ -235,9 +247,8 @@
   document.getElementById('next-period').addEventListener('click', () => movePeriod(1));
   document.getElementById('today-button').addEventListener('click', () => { const current = currentPeriodEnd(); state.periodYear = current.year; state.periodMonth = current.month; renderAll(); });
   elements.target.addEventListener('input', (event) => { getSettings().targetHours = Math.max(0, Number(event.target.value) || 0); renderAll(); });
-  elements.dailyHours.addEventListener('change', (event) => { getSettings().dailyHours = Math.max(0.5, Math.min(12, Number(event.target.value) || 2)); renderAll(); });
+  elements.dailyHours.addEventListener('change', (event) => { getSettings().dailyHours = Math.max(0.5, Math.min(2, Number(event.target.value) || 2)); renderAll(); });
   elements.weekendsOff.addEventListener('input', (event) => { getSettings().weekendsOff = Math.max(0, Math.min(Number(event.target.max), Number(event.target.value) || 0)); renderAll(); });
-  document.getElementById('preference-group').addEventListener('click', (event) => { const button = event.target.closest('[data-preference]'); if (!button) return; getSettings().preference = button.dataset.preference; renderAll(); });
   elements.calendarGrid.addEventListener('change', (event) => {
     const input = event.target.closest('[data-date]'); if (!input) return;
     state.actual[input.dataset.date] = Math.round(Math.max(0, Math.min(24, Number(input.value) || 0)) * 2) / 2;
