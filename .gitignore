@@ -36,6 +36,3 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
-
-# local application data
-data/state.json

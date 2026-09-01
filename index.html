@@ -22,7 +22,10 @@
           <button id="next-period" aria-label="下个考核周期">›</button>
         </div>
         <button class="secondary-button" id="today-button">当前周期</button>
+        <button class="secondary-button" id="import-button">导入 JSON</button>
+        <button class="secondary-button" id="export-button">导出 JSON</button>
         <button class="primary-button" id="redistribute-button">重新计算</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden>
       </div>
     </header>
 
@@ -72,7 +75,7 @@
       </aside>
 
       <section class="calendar-area">
-        <div class="toast" id="toast" role="status"><span>✓</span> 已根据实际加班自动调整剩余计划</div>
+        <div class="toast" id="toast" role="status"><span>✓</span> <span id="toast-message">已根据实际加班自动调整剩余计划</span></div>
         <div class="calendar-header">
           <div><h2 id="calendar-title">考核周期</h2><p id="period-range"></p></div>
           <div class="calendar-summary"><span class="summary-dot"></span> 建议安排 <b id="suggested-total">0h</b></div>

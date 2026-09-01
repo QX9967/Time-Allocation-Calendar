@@ -2,7 +2,6 @@
   'use strict';
 
   const STORAGE_KEY = 'overtime-cycle-planner-v2';
-  const API_STATE = '/api/state';
   const pad = (value) => String(value).padStart(2, '0');
   const makeDate = (year, month, day) => new Date(year, month - 1, day, 12);
   const dateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -55,6 +54,9 @@
 
   function applySavedState(saved) {
     if (!saved) return false;
+    if (typeof saved !== 'object' || Array.isArray(saved)) return false;
+    if (saved.settings !== undefined && (typeof saved.settings !== 'object' || Array.isArray(saved.settings))) return false;
+    if (saved.actual !== undefined && (typeof saved.actual !== 'object' || Array.isArray(saved.actual))) return false;
     state.settings = saved.settings || {};
     state.actual = saved.actual || {};
     if (Number.isInteger(saved.periodYear) && Number.isInteger(saved.periodMonth)) {
@@ -76,17 +78,12 @@
     return false;
   }
 
-  let saveTimer;
   function stateSnapshot() {
     return { version: 1, updatedAt: new Date().toISOString(), periodYear: state.periodYear, periodMonth: state.periodMonth, settings: state.settings, actual: state.actual };
   }
   function saveState() {
     const snapshot = stateSnapshot();
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch (_) { /* 忽略存储限制 */ }
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      fetch(API_STATE, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snapshot) }).catch(() => { /* 直接打开 HTML 时使用 localStorage */ });
-    }, 250);
   }
   function periodId() { return `${state.periodYear}-${pad(state.periodMonth)}`; }
   function getSettings() {
@@ -203,7 +200,8 @@
     actualTotal: document.getElementById('actual-total'), fridayExtra: document.getElementById('friday-extra'), remainingTotal: document.getElementById('remaining-total'), progressPercent: document.getElementById('progress-percent'),
     progressTrack: document.querySelector('#progress-track span'), arrangedDays: document.getElementById('arranged-days'), coverageHours: document.getElementById('coverage-hours'),
     suggestedTotal: document.getElementById('suggested-total'), calendarGrid: document.getElementById('calendar-grid'), toast: document.getElementById('toast'),
-    sidebar: document.getElementById('sidebar'), backdrop: document.getElementById('sidebar-backdrop'), mobileSummary: document.getElementById('mobile-settings-summary'),
+    sidebar: document.getElementById('sidebar'), backdrop: document.getElementById('sidebar-backdrop'), mobileSummary: document.getElementById('mobile-settings-summary'), toastMessage: document.getElementById('toast-message'),
+    importButton: document.getElementById('import-button'), exportButton: document.getElementById('export-button'), importFile: document.getElementById('import-file'),
   };
 
   function renderAll() {
@@ -254,7 +252,8 @@
   }
 
   let toastTimer;
-  function notify() {
+  function notify(message = '已根据实际加班自动调整剩余计划') {
+    elements.toastMessage.textContent = message;
     clearTimeout(toastTimer); elements.toast.classList.add('show');
     toastTimer = setTimeout(() => elements.toast.classList.remove('show'), 2200);
   }
@@ -287,16 +286,33 @@
   });
   elements.backdrop.addEventListener('click', closeSettings);
 
-  async function start() {
-    loadBrowserState();
+  elements.exportButton.addEventListener('click', () => {
+    const blob = new Blob([`${JSON.stringify(stateSnapshot(), null, 2)}\n`], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `加班时间安排-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+  elements.importButton.addEventListener('click', () => elements.importFile.click());
+  elements.importFile.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
     try {
-      const response = await fetch(API_STATE, { cache: 'no-store' });
-      if (response.ok) {
-        const saved = await response.json();
-        // 首次启动服务时 state.json 尚不存在，保留已有的浏览器存储。
-        if (saved.updatedAt || Object.keys(saved.settings || {}).length || Object.keys(saved.actual || {}).length) applySavedState(saved);
-      }
-    } catch (_) { /* 没有启动本地服务时使用浏览器存储 */ }
+      const imported = JSON.parse(await file.text());
+      if (!applySavedState(imported)) throw new Error('JSON 格式不正确');
+      saveState();
+      renderAll();
+      notify('已导入 JSON 数据');
+    } catch (error) {
+      window.alert(`导入失败：${error.message}`);
+    }
+  });
+
+  function start() {
+    loadBrowserState();
     renderAll();
   }
 
