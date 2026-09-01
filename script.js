@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'overtime-cycle-planner-v2';
+  const API_STATE = '/api/state';
   const pad = (value) => String(value).padStart(2, '0');
   const makeDate = (year, month, day) => new Date(year, month - 1, day, 12);
   const dateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -52,20 +53,40 @@
     actual: {},
   };
 
-  function loadState() {
+  function applySavedState(saved) {
+    if (!saved) return false;
+    state.settings = saved.settings || {};
+    state.actual = saved.actual || {};
+    if (Number.isInteger(saved.periodYear) && Number.isInteger(saved.periodMonth)) {
+      state.periodYear = saved.periodYear;
+      state.periodMonth = saved.periodMonth;
+    }
+    return true;
+  }
+
+  function loadBrowserState() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (saved) {
-        state.settings = saved.settings || {};
-        state.actual = saved.actual || {};
-      } else {
+      if (applySavedState(saved)) return true;
+      {
         const old = JSON.parse(localStorage.getItem('overtime-planner-v1') || 'null');
         if (old) state.actual = old.actual || {};
       }
     } catch (_) { /* 文件模式或隐私模式下仍可正常使用 */ }
+    return false;
+  }
+
+  let saveTimer;
+  function stateSnapshot() {
+    return { version: 1, updatedAt: new Date().toISOString(), periodYear: state.periodYear, periodMonth: state.periodMonth, settings: state.settings, actual: state.actual };
   }
   function saveState() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, actual: state.actual })); } catch (_) { /* 忽略存储限制 */ }
+    const snapshot = stateSnapshot();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch (_) { /* 忽略存储限制 */ }
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      fetch(API_STATE, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snapshot) }).catch(() => { /* 直接打开 HTML 时使用 localStorage */ });
+    }, 250);
   }
   function periodId() { return `${state.periodYear}-${pad(state.periodMonth)}`; }
   function getSettings() {
@@ -266,6 +287,18 @@
   });
   elements.backdrop.addEventListener('click', closeSettings);
 
-  loadState();
-  renderAll();
+  async function start() {
+    loadBrowserState();
+    try {
+      const response = await fetch(API_STATE, { cache: 'no-store' });
+      if (response.ok) {
+        const saved = await response.json();
+        // 首次启动服务时 state.json 尚不存在，保留已有的浏览器存储。
+        if (saved.updatedAt || Object.keys(saved.settings || {}).length || Object.keys(saved.actual || {}).length) applySavedState(saved);
+      }
+    } catch (_) { /* 没有启动本地服务时使用浏览器存储 */ }
+    renderAll();
+  }
+
+  start();
 })();
