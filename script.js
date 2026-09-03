@@ -6,6 +6,7 @@
   const makeDate = (year, month, day) => new Date(year, month - 1, day, 12);
   const dateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const formatHours = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const hasActualEntry = (key) => Object.prototype.hasOwnProperty.call(state.actual, key);
   const holidayData = {};
 
   function addRange(year, month, from, to, name) {
@@ -153,7 +154,8 @@
 
       allPeriodDays.forEach((date) => {
         const key = dateKey(date), info = holidayData[key];
-        if (key < todayKey || date.getDay() === 5 || date.getDay() === 0 || (state.actual[key] || 0) > 0) return;
+        // An explicitly entered 0 means this day should not receive a recommendation.
+        if (key < todayKey || date.getDay() === 5 || date.getDay() === 0 || hasActualEntry(key)) return;
         const weekend = date.getDay() === 0 || date.getDay() === 6;
         if (reserved.has(key) && info?.type !== 'workday') return;
         const normalWorkday = info?.type === 'workday' || (!weekend && info?.type !== 'holiday');
@@ -237,7 +239,7 @@
     const days = getCalendarDays(range.start, range.end);
     elements.calendarGrid.innerHTML = days.map((date) => {
       const key = dateKey(date), inside = isInside(date, range.start, range.end), info = holidayData[key];
-      const weekend = date.getDay() === 0 || date.getDay() === 6, isToday = key === dateKey(today), value = Number(state.actual[key]) || 0, suggestion = plan.suggestions[key] || 0;
+      const weekend = date.getDay() === 0 || date.getDay() === 6, isToday = key === dateKey(today), entered = hasActualEntry(key), value = Number(state.actual[key]) || 0, suggestion = plan.suggestions[key] || 0;
       const monthName = date.getDate() === 1 || key === dateKey(range.start) ? `<span class="month-name">${date.getMonth() + 1}月</span>` : '';
       const holidayTag = info ? `<span class="holiday-tag ${info.type}">${info.type === 'workday' ? '班' : '休'} · ${info.name}</span>` : '';
       const offTag = inside && plan.reserved.has(key) && info?.type !== 'workday' && !info ? '<span class="off-tag">完整双休</span>' : '';
@@ -246,7 +248,7 @@
       return `<article class="day-cell ${inside ? '' : 'outside'} ${weekend ? 'weekend' : ''} ${isFriday ? 'friday' : ''} ${info?.type || ''} ${isToday ? 'today' : ''}">
         <div class="day-top"><span class="date-number">${date.getDate()}</span>${monthName}${isToday ? '<span class="today-badge">今天</span>' : ''}</div>
         <div class="day-flags">${inside ? holidayTag + offTag + planTag : ''}</div>
-        ${inside ? `<label class="actual-input"><span>${isFriday ? '额外' : '实际'}</span><input data-date="${key}" aria-label="${key} ${isFriday ? '额外' : '实际'}加班小时" type="number" min="0" max="24" step="0.5" value="${value || ''}" placeholder="0"><i>h</i></label>` : ''}
+        ${inside ? `<label class="actual-input"><span>${isFriday ? '额外' : '实际'}</span><input data-date="${key}" aria-label="${key} ${isFriday ? '额外' : '实际'}加班小时" type="number" min="0" max="24" step="0.5" value="${entered ? value : ''}" placeholder="0"><i>h</i></label>` : ''}
       </article>`;
     }).join('');
   }
@@ -271,7 +273,8 @@
   elements.weekendsOff.addEventListener('input', (event) => { getSettings().weekendsOff = Math.max(0, Math.min(Number(event.target.max), Number(event.target.value) || 0)); renderAll(); });
   elements.calendarGrid.addEventListener('change', (event) => {
     const input = event.target.closest('[data-date]'); if (!input) return;
-    state.actual[input.dataset.date] = Math.round(Math.max(0, Math.min(24, Number(input.value) || 0)) * 2) / 2;
+    if (input.value.trim() === '') delete state.actual[input.dataset.date];
+    else state.actual[input.dataset.date] = Math.round(Math.max(0, Math.min(24, Number(input.value) || 0)) * 2) / 2;
     renderAll(); notify();
   });
   elements.calendarGrid.addEventListener('keydown', (event) => { if (event.key === 'Enter' && event.target.matches('[data-date]')) event.target.blur(); });
