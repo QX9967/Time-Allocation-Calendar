@@ -34,7 +34,7 @@
   addRange(2026, 6, 19, 21, '端午节');
   addRange(2026, 9, 25, 27, '中秋节');
   addRange(2026, 10, 1, 7, '国庆节');
-  ['2026-01-04', '2026-02-14', '2026-02-28', '2026-05-09', '2026-09-20', '2026-10-10'].forEach((key) => { holidayData[key] = { name: '调休上班', type: 'workday' }; });
+  ['2026-01-04', '2026-02-14', '2026-02-28', '2026-05-09', '2026-10-10', '2026-10-17'].forEach((key) => { holidayData[key] = { name: '调休上班', type: 'workday' }; });
 
   const now = new Date();
   const today = makeDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
