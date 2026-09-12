@@ -64,13 +64,13 @@
           <div class="progress-stats">
             <div><span>已完成</span><b class="done" id="actual-total">0h</b></div>
             <div><span>待完成</span><b id="remaining-total">36h</b></div>
-            <div><span>周五额外</span><b class="extra" id="friday-extra">0h</b></div>
+            <div><span>周五加班</span><b class="extra" id="friday-extra">0h</b></div>
           </div>
           <div class="progress-track" id="progress-track" aria-label="完成度 0%"><span></span></div>
           <div class="plan-note"><span class="note-icon" aria-hidden="true">▣</span><div><b id="arranged-days">剩余 0 个可安排日期</b><p id="coverage-hours">当前计划可覆盖 0 小时</p></div></div>
           <button class="reset-button" id="reset-button">清空本周期实际记录</button>
         </section>
-        <p class="overtime-rule">周五属于计划外额外加班，周日固定不安排；其他工作日填写下班后的加班时长，周六和法定节假日填写实际工作时长。</p>
+        <p class="overtime-rule">周五属于计划外加班，录入后计入本周期完成量但不自动生成建议；周日固定不安排，其他工作日填写下班后的加班时长，周六和法定节假日填写实际工作时长。</p>
         <p class="data-note">考核周期：上月 24 日至本月 23 日<br>节假日包含 2025–2026 年国务院办公厅公布安排</p>
       </aside>
 
@@ -82,7 +82,7 @@
         </div>
         <div class="calendar-card">
           <div class="weekday-row">
-            <div>周一<small>工作日</small></div><div>周二<small>工作日</small></div><div>周三<small>工作日</small></div><div>周四<small>工作日</small></div><div>周五<small>不计入计划</small></div><div class="weekend-heading">周六<small>可安排</small></div><div class="weekend-heading">周日<small>固定不安排</small></div>
+            <div>周一<small>工作日</small></div><div>周二<small>工作日</small></div><div>周三<small>工作日</small></div><div>周四<small>工作日</small></div><div>周五<small>计入完成</small></div><div class="weekend-heading">周六<small>可安排</small></div><div class="weekend-heading">周日<small>固定不安排</small></div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
         </div>

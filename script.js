@@ -138,7 +138,7 @@
     const cursor = new Date(range.start);
     while (cursor <= range.end) { allPeriodDays.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1); }
 
-    const actualTotal = allPeriodDays.reduce((sum, date) => date.getDay() === 5 ? sum : sum + (Number(state.actual[dateKey(date)]) || 0), 0);
+    const actualTotal = allPeriodDays.reduce((sum, date) => sum + (Number(state.actual[dateKey(date)]) || 0), 0);
     const fridayExtra = allPeriodDays.reduce((sum, date) => date.getDay() === 5 ? sum + (Number(state.actual[dateKey(date)]) || 0) : sum, 0);
     const weekendGroups = getWeekendGroups(range.start, range.end);
     settings.weekendsOff = Math.min(settings.weekendsOff, weekendGroups.length);
